@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      Role       @default(ADMIN)
+  posts     BlogPost[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("users")
+}
+
+model BlogPost {
+  id              String     @id @default(uuid())
+  title           String
+  slug            String     @unique
+  category        String
+  excerpt         String
+  content         String     @db.Text
+  coverImage      String
+  tags            String[]
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean    @default(true)
+  featured        Boolean    @default(false)
+  readTime        String     @default("5 min read")
+  authorId        String
+  author          User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  leads           BlogLead[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@map("blog_posts")
+}
+
+model BlogLead {
+  id        String     @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String     @db.Text
+  status    LeadStatus @default(NEW)
+  notes     String?    @db.Text
+  blogId    String?
+  blog      BlogPost?  @relation(fields: [blogId], references: [id], onDelete: SetNull)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("blog_leads")
+}

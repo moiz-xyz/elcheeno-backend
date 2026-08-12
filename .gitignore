@@ -1,0 +1,17 @@
+# NestJS backend dependencies
+node_modules/
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# System & IDE files
+.DS_Store
+.vscode/
+.idea/
