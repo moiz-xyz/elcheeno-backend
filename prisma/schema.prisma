@@ -11,6 +11,8 @@ enum Role {
   ADMIN
   EDITOR
   USER
+  SELLER
+  BUYER
 }
 
 enum LeadStatus {
@@ -21,14 +23,17 @@ enum LeadStatus {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  name      String
-  role      Role       @default(ADMIN)
-  posts     BlogPost[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(uuid())
+  email       String     @unique
+  password    String
+  name        String
+  role        Role       @default(SELLER)
+  sellerName  String?
+  niche       String?
+  discord     String?
+  posts       BlogPost[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@map("users")
 }
