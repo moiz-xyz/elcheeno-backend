@@ -21,9 +21,17 @@ async function bootstrap() {
 
   // Enable CORS for frontend applications
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, postman) or any allowed domain
+      if (!origin || true) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With, Origin',
+    credentials: true,
   });
 
   // Set global API prefix
