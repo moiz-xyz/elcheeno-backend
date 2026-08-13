@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -22,7 +22,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('An account with this email address already exists');
+      throw new BadRequestException('An account with this email address already exists. Please login instead.');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -36,6 +36,7 @@ export class AuthService {
         niche: niche || 'Multi-Game',
         discord: discord || null,
         role: Role.SELLER,
+        isApproved: false,
       },
     });
 
@@ -51,6 +52,7 @@ export class AuthService {
         sellerName: user.sellerName,
         role: user.role,
         niche: user.niche,
+        isApproved: user.isApproved,
       },
     };
   }
@@ -80,7 +82,9 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        sellerName: user.sellerName || user.name,
         role: user.role,
+        isApproved: user.isApproved,
       },
     };
   }
@@ -92,7 +96,11 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        sellerName: true,
         role: true,
+        isApproved: true,
+        niche: true,
+        discord: true,
         createdAt: true,
       },
     });
@@ -102,5 +110,55 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async getAllSellers() {
+    return this.prisma.user.findMany({
+      where: { role: Role.SELLER },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        sellerName: true,
+        role: true,
+        isApproved: true,
+        niche: true,
+        discord: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async approveSeller(id: string) {
+    const seller = await this.prisma.user.findUnique({ where: { id } });
+    if (!seller) throw new NotFoundException('Seller not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { isApproved: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isApproved: true,
+      },
+    });
+  }
+
+  async rejectSeller(id: string) {
+    const seller = await this.prisma.user.findUnique({ where: { id } });
+    if (!seller) throw new NotFoundException('Seller not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { isApproved: false },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isApproved: true,
+      },
+    });
   }
 }

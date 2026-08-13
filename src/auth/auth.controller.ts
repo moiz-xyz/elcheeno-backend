@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Param, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -22,5 +22,20 @@ export class AuthController {
   @Get('me')
   async getMe(@Request() req: any) {
     return this.authService.getMe(req.user.id);
+  }
+
+  @Get('sellers')
+  async getSellers() {
+    return this.authService.getAllSellers();
+  }
+
+  @Patch('sellers/:id/approve')
+  async approveSeller(@Param('id') id: string) {
+    return this.authService.approveSeller(id);
+  }
+
+  @Patch('sellers/:id/reject')
+  async rejectSeller(@Param('id') id: string) {
+    return this.authService.rejectSeller(id);
   }
 }
