@@ -21,6 +21,12 @@ export class OrdersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('all')
+  async getAllOrders() {
+    return this.ordersService.getAllOrders();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async getOrderById(@Param('id') id: string) {
     return this.ordersService.getOrderById(id);
@@ -34,5 +40,14 @@ export class OrdersController {
     @Body('status') status: OrderStatus,
   ) {
     return this.ordersService.updateOrderStatus(req.user.id, id, status);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('admin/:id/status')
+  async adminUpdateOrderStatus(
+    @Param('id') id: string,
+    @Body('status') status: OrderStatus,
+  ) {
+    return this.ordersService.adminUpdateOrderStatus(id, status);
   }
 }

@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { Role } from '@prisma/client';
+import { Role, OrderStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -188,6 +188,44 @@ export class AuthService {
         name: true,
         isApproved: true,
       },
+    });
+  }
+
+  async getAllBuyers() {
+    const buyers = await this.prisma.user.findMany({
+      where: { role: Role.BUYER },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        role: true,
+        isApproved: true,
+        avatarUrl: true,
+        createdAt: true,
+        buyerOrders: {
+          select: {
+            id: true,
+            price: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return buyers.map((b) => {
+      const totalOrders = b.buyerOrders.length;
+      const totalSpent = b.buyerOrders
+        .filter((o) => o.status === OrderStatus.COMPLETED)
+        .reduce((sum, o) => sum + o.price, 0);
+
+      const { buyerOrders, ...rest } = b;
+      return {
+        ...rest,
+        totalOrders,
+        totalSpent,
+      };
     });
   }
 }

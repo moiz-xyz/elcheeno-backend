@@ -41,6 +41,7 @@ export class MessagesService {
             email: true,
             role: true,
             sellerName: true,
+            avatarUrl: true,
           },
         },
         userTwo: {
@@ -51,6 +52,7 @@ export class MessagesService {
             email: true,
             role: true,
             sellerName: true,
+            avatarUrl: true,
           },
         },
         messages: {
@@ -126,10 +128,10 @@ export class MessagesService {
       },
       include: {
         userOne: {
-          select: { id: true, name: true, username: true, email: true, role: true, sellerName: true },
+          select: { id: true, name: true, username: true, email: true, role: true, sellerName: true, avatarUrl: true },
         },
         userTwo: {
-          select: { id: true, name: true, username: true, email: true, role: true, sellerName: true },
+          select: { id: true, name: true, username: true, email: true, role: true, sellerName: true, avatarUrl: true },
         },
       },
     });
@@ -142,10 +144,10 @@ export class MessagesService {
         },
         include: {
           userOne: {
-            select: { id: true, name: true, username: true, email: true, role: true, sellerName: true },
+            select: { id: true, name: true, username: true, email: true, role: true, sellerName: true, avatarUrl: true },
           },
           userTwo: {
-            select: { id: true, name: true, username: true, email: true, role: true, sellerName: true },
+            select: { id: true, name: true, username: true, email: true, role: true, sellerName: true, avatarUrl: true },
           },
         },
       });
@@ -286,6 +288,7 @@ export class MessagesService {
         role: true,
         sellerName: true,
         niche: true,
+        avatarUrl: true,
       },
       take: 20,
     });

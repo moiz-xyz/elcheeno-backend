@@ -42,6 +42,11 @@ export class AuthController {
     return this.authService.getAllSellers();
   }
 
+  @Get('buyers')
+  async getBuyers() {
+    return this.authService.getAllBuyers();
+  }
+
   @Patch('sellers/:id/approve')
   async approveSeller(@Param('id') id: string) {
     return this.authService.approveSeller(id);

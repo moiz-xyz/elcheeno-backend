@@ -175,4 +175,67 @@ export class OrdersService {
       },
     });
   }
+
+  async getAllOrders() {
+    return this.prisma.order.findMany({
+      include: {
+        listing: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            sellerName: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        buyer: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async adminUpdateOrderStatus(orderId: string, status: OrderStatus) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { status },
+      include: {
+        listing: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            sellerName: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        buyer: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
 }
