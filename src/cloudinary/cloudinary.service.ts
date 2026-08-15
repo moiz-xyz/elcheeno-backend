@@ -25,41 +25,20 @@ export class CloudinaryService {
           folder,
           resource_type: 'image',
           transformation: [
-            { width: 1000, crop: 'limit' },
+            { width: 1200, crop: 'limit' },
             { quality: 'auto:good' },
             { fetch_format: 'auto' },
           ],
         });
-        return res.secure_url;
+        if (res && res.secure_url) {
+          return res.secure_url;
+        }
       } catch (error) {
         console.error('Cloudinary upload error:', error);
       }
     }
 
-    // Local Disk Fallback if base64 image and Cloudinary is not configured or fails
-    if (fileInput.startsWith('data:image/')) {
-      try {
-        const match = fileInput.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
-        if (match) {
-          const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
-          const buffer = Buffer.from(match[2], 'base64');
-          const fileName = `seller-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
-
-          const uploadDir = path.join(process.cwd(), '..', 'public', 'uploads', 'sellers');
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
-
-          const filePath = path.join(uploadDir, fileName);
-          fs.writeFileSync(filePath, buffer);
-
-          return `/uploads/sellers/${fileName}`;
-        }
-      } catch (err) {
-        console.error('Local fallback seller avatar save error:', err);
-      }
-    }
-
+    // Return fileInput (base64 string or original URL) as direct fallback
     return fileInput;
   }
 }
