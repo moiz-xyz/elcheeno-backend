@@ -1,9 +1,24 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class MessagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
+
+  /**
+   * Upload an image attachment for messages to Cloudinary.
+   */
+  async uploadImage(imageInput: string) {
+    if (!imageInput) {
+      throw new BadRequestException('Image data or URL is required');
+    }
+    const imageUrl = await this.cloudinaryService.uploadImage(imageInput, 'elcheeno/messages');
+    return { imageUrl };
+  }
 
   /**
    * Get all conversations for the authenticated user.
@@ -51,7 +66,16 @@ export class MessagesService {
     // Format conversations to clearly provide otherUser info & unread count
     const formatted = await Promise.all(
       conversations.map(async (conv) => {
-        const otherUser = conv.userOneId === userId ? conv.userTwo : conv.userOne;
+        const rawOtherUser = conv.userOneId === userId ? conv.userTwo : conv.userOne;
+        const otherUser = rawOtherUser || {
+          id: 'deleted',
+          name: 'Unknown User',
+          username: 'unknown',
+          email: '',
+          role: 'BUYER',
+          sellerName: 'Unknown User',
+        };
+
         const lastMessage = conv.messages[0] || null;
 
         const unreadCount = await this.prisma.message.count({

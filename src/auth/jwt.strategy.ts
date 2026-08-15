@@ -4,9 +4,11 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
+  sub?: string;
+  id?: string;
+  userId?: string;
+  email?: string;
+  role?: string;
 }
 
 @Injectable()
@@ -20,21 +22,36 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+    const userId = payload?.sub || payload?.id || payload?.userId;
 
-    if (!user) {
-      throw new UnauthorizedException('User no longer exists or invalid token');
+    if (!userId || typeof userId !== 'string') {
+      throw new UnauthorizedException('Invalid or missing user ID in authentication token');
     }
 
-    return user;
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          username: true,
+          role: true,
+          sellerName: true,
+          createdAt: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User account no longer exists');
+      }
+
+      return user;
+    } catch (err) {
+      if (err instanceof UnauthorizedException) {
+        throw err;
+      }
+      throw new UnauthorizedException('Authentication token validation failed');
+    }
   }
 }

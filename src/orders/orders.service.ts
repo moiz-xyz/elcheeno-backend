@@ -142,6 +142,10 @@ export class OrdersService {
       throw new NotFoundException('Order not found or access denied.');
     }
 
+    if (order.status === OrderStatus.COMPLETED) {
+      throw new BadRequestException('This order is already COMPLETED and cannot be modified.');
+    }
+
     return this.prisma.order.update({
       where: { id: order.id },
       data: { status },

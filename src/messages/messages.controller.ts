@@ -42,4 +42,9 @@ export class MessagesController {
   async getUnreadCount(@Request() req: any) {
     return this.messagesService.getUnreadCount(req.user.id);
   }
+
+  @Post('upload')
+  async uploadImage(@Body('image') image: string) {
+    return this.messagesService.uploadImage(image);
+  }
 }
