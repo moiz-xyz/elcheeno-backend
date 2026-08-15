@@ -131,7 +131,12 @@ export class ListingsService implements OnModuleInit {
   }
 
   async update(id: string, updateDto: UpdateListingDto) {
-    await this.findOne(id);
+    const listing = await this.findOne(id);
+    const sellerUser = await this.prisma.user.findUnique({ where: { id: listing.sellerId } });
+    if (sellerUser && sellerUser.role === 'SELLER' && !sellerUser.isApproved) {
+      throw new ForbiddenException('Your seller account is currently pending identity verification. You cannot update listings until approved by an admin.');
+    }
+
     return this.prisma.listing.update({
       where: { id },
       data: updateDto,
@@ -148,7 +153,12 @@ export class ListingsService implements OnModuleInit {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const listing = await this.findOne(id);
+    const sellerUser = await this.prisma.user.findUnique({ where: { id: listing.sellerId } });
+    if (sellerUser && sellerUser.role === 'SELLER' && !sellerUser.isApproved) {
+      throw new ForbiddenException('Your seller account is currently pending identity verification. You cannot delete listings until approved by an admin.');
+    }
+
     return this.prisma.listing.delete({
       where: { id },
     });

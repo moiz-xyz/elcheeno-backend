@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -140,6 +140,11 @@ export class OrdersService {
 
     if (!order) {
       throw new NotFoundException('Order not found or access denied.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user && user.role === Role.SELLER && !user.isApproved) {
+      throw new ForbiddenException('Your seller account is currently pending identity verification. You cannot update order status until approved by an admin.');
     }
 
     if (order.status === OrderStatus.COMPLETED) {
