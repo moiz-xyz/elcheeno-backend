@@ -22,20 +22,35 @@ enum LeadStatus {
   CLOSED
 }
 
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
 model User {
-  id          String     @id @default(uuid())
-  email       String     @unique
-  password    String
-  name        String
-  role        Role       @default(SELLER)
-  sellerName  String?
-  niche       String?
-  discord     String?
-  isApproved  Boolean    @default(false)
-  posts       BlogPost[]
-  listings    Listing[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  email        String     @unique
+  password     String
+  name         String
+  username     String?    @unique
+  role         Role       @default(BUYER)
+  sellerName   String?
+  niche        String?
+  discord      String?
+  avatarUrl    String?
+  isApproved   Boolean    @default(false)
+  posts        BlogPost[]
+  listings     Listing[]
+  buyerOrders  Order[]    @relation("BuyerOrders")
+  sellerOrders Order[]    @relation("SellerOrders")
+  conversationsOne Conversation[] @relation("ConversationUserOne")
+  conversationsTwo Conversation[] @relation("ConversationUserTwo")
+  sentMessages     Message[]      @relation("SentMessages")
+  receivedMessages Message[]      @relation("ReceivedMessages")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@map("users")
 }
@@ -93,8 +108,58 @@ model Listing {
   status       String   @default("ACTIVE") // "ACTIVE", "SOLD", "INACTIVE"
   sellerId     String
   seller       User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orders       Order[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@map("listings")
 }
+
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  listingId   String
+  listing     Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId     String
+  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId    String
+  seller      User        @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Cascade)
+  price       Float
+  credentials String?     @db.Text
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  userOneId String
+  userOne   User      @relation("ConversationUserOne", fields: [userOneId], references: [id], onDelete: Cascade)
+  userTwoId String
+  userTwo   User      @relation("ConversationUserTwo", fields: [userTwoId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userOneId, userTwoId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId     String
+  receiver       User         @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  content        String       @db.Text
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("messages")
+}
+

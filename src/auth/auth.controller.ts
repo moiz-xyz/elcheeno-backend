@@ -1,12 +1,25 @@
-import { Controller, Post, Body, Get, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
+
+  @Post('upload-avatar')
+  async uploadAvatar(@Body('image') image: string) {
+    if (!image) {
+      throw new BadRequestException('Image data is required');
+    }
+    const url = await this.cloudinaryService.uploadImage(image, 'elcheeno/sellers');
+    return { url };
+  }
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {

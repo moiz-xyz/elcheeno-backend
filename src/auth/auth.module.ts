@@ -4,10 +4,12 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     PassportModule,
+    CloudinaryModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'elcheeno_crm_super_secret_jwt_key_2026',
       signOptions: { expiresIn: '7d' },

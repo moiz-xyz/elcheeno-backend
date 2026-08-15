@@ -16,6 +16,10 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
+  username?: string;
+
+  @IsString()
+  @IsOptional()
   sellerName?: string;
 
   @IsString()
@@ -25,4 +29,16 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   discord?: string;
+
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  accountType?: string; // 'BUYER' | 'SELLER'
+
+  @IsString()
+  @IsOptional()
+  role?: string; // 'BUYER' | 'SELLER'
 }

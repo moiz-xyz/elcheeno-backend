@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { Role } from '@prisma/client';
@@ -11,11 +12,13 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, password, name, sellerName, niche, discord } = registerDto;
+    const { email, password, name, username, sellerName, niche, discord, avatarUrl, accountType, role } = registerDto;
     const formattedEmail = email.toLowerCase().trim();
+    const formattedUsername = username ? username.toLowerCase().trim().replace(/[^a-z0-9_]/g, '') : null;
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email: formattedEmail },
@@ -25,18 +28,37 @@ export class AuthService {
       throw new BadRequestException('An account with this email address already exists. Please login instead.');
     }
 
+    if (formattedUsername) {
+      const existingUsername = await this.prisma.user.findFirst({
+        where: { username: formattedUsername },
+      });
+      if (existingUsername) {
+        throw new BadRequestException(`Username "@${formattedUsername}" is already taken. Please choose another.`);
+      }
+    }
+
+    let finalAvatarUrl = avatarUrl || null;
+    if (finalAvatarUrl && finalAvatarUrl.startsWith('data:image/')) {
+      finalAvatarUrl = await this.cloudinaryService.uploadImage(finalAvatarUrl, 'elcheeno/sellers');
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
+    const requestedAccountType = (accountType || role || 'BUYER').toUpperCase();
+    const isSeller = requestedAccountType === 'SELLER';
+    const userRole = isSeller ? Role.SELLER : Role.BUYER;
 
     const user = await this.prisma.user.create({
       data: {
         email: formattedEmail,
         password: hashedPassword,
         name,
-        sellerName: sellerName || name,
-        niche: niche || 'Multi-Game',
+        username: formattedUsername || (email.split('@')[0]),
+        sellerName: isSeller ? (sellerName || name) : null,
+        niche: isSeller ? (niche || 'Multi-Game') : null,
         discord: discord || null,
-        role: Role.SELLER,
-        isApproved: false,
+        avatarUrl: finalAvatarUrl,
+        role: userRole,
+        isApproved: !isSeller, // Buyers are automatically approved, sellers require verification
       },
     });
 
@@ -49,9 +71,11 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        username: user.username,
         sellerName: user.sellerName,
         role: user.role,
         niche: user.niche,
+        avatarUrl: user.avatarUrl,
         isApproved: user.isApproved,
       },
     };
@@ -82,8 +106,10 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        sellerName: user.sellerName || user.name,
+        username: user.username,
+        sellerName: user.role === Role.SELLER ? (user.sellerName || user.name) : undefined,
         role: user.role,
+        avatarUrl: user.avatarUrl,
         isApproved: user.isApproved,
       },
     };
@@ -96,11 +122,13 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        username: true,
         sellerName: true,
         role: true,
         isApproved: true,
         niche: true,
         discord: true,
+        avatarUrl: true,
         createdAt: true,
       },
     });
@@ -124,6 +152,7 @@ export class AuthService {
         isApproved: true,
         niche: true,
         discord: true,
+        avatarUrl: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
