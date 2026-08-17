@@ -2,6 +2,7 @@ import { Controller, Post, Body, Get, Patch, Param, UseGuards, Request, BadReque
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -19,6 +20,11 @@ export class AuthController {
     }
     const url = await this.cloudinaryService.uploadImage(image, 'elcheeno/sellers');
     return { url };
+  }
+
+  @Post('google')
+  async googleAuth(@Body() googleAuthDto: GoogleAuthDto) {
+    return this.authService.googleAuth(googleAuthDto);
   }
 
   @Post('register')

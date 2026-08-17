@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { Role, OrderStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -14,6 +15,68 @@ export class AuthService {
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
   ) {}
+
+  async googleAuth(googleAuthDto: GoogleAuthDto) {
+    const { email, name, avatarUrl, role } = googleAuthDto;
+    const formattedEmail = email.toLowerCase().trim();
+
+    let user = await this.prisma.user.findUnique({
+      where: { email: formattedEmail },
+    });
+
+    if (!user) {
+      const displayName = name || formattedEmail.split('@')[0];
+      const rawUsername = (formattedEmail.split('@')[0]).toLowerCase().replace(/[^a-z0-9_]/g, '');
+      
+      let uniqueUsername = rawUsername;
+      let counter = 1;
+      while (await this.prisma.user.findFirst({ where: { username: uniqueUsername } })) {
+        uniqueUsername = `${rawUsername}_${counter}`;
+        counter++;
+      }
+
+      const dummyPassword = await bcrypt.hash(`google_oauth_${Date.now()}_${Math.random()}`, 10);
+      const userRole = Role.BUYER; // Google auth is strictly for Buyers
+
+      user = await this.prisma.user.create({
+        data: {
+          email: formattedEmail,
+          password: dummyPassword,
+          name: displayName,
+          username: uniqueUsername,
+          sellerName: null,
+          niche: null,
+          avatarUrl: avatarUrl || null,
+          role: userRole,
+          isApproved: true,
+        },
+      });
+    } else {
+      if (avatarUrl && !user.avatarUrl) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { avatarUrl },
+        });
+      }
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        sellerName: user.role === Role.SELLER ? (user.sellerName || user.name) : undefined,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        isApproved: user.isApproved,
+      },
+    };
+  }
 
   async register(registerDto: RegisterDto) {
     const { email, password, name, username, sellerName, niche, discord, avatarUrl, accountType, role } = registerDto;
