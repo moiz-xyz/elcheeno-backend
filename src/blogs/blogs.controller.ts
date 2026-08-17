@@ -35,6 +35,13 @@ export class BlogsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('upload')
+  async uploadImage(@Body('image') image: string) {
+    const url = await this.blogsService.uploadImageToCloudinary(image);
+    return { imageUrl: url };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Body() createBlogDto: CreateBlogDto, @Request() req: any) {
     return this.blogsService.create(createBlogDto, req.user.id);

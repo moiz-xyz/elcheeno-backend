@@ -93,6 +93,15 @@ export class BlogsService {
     return post;
   }
 
+  async uploadImageToCloudinary(imageInput: string): Promise<string> {
+    if (!imageInput) return '';
+    const uploadedUrl = await this.cloudinaryService.uploadImage(imageInput, 'elcheeno/blogs');
+    if (uploadedUrl && uploadedUrl.startsWith('http')) {
+      return uploadedUrl;
+    }
+    return this.processCoverImage(imageInput);
+  }
+
   async processCoverImage(imageInput?: string): Promise<string> {
     const defaultUrl = 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop';
     if (!imageInput) return defaultUrl;
