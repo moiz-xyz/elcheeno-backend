@@ -38,7 +38,7 @@ export class CloudinaryService {
       }
     }
 
-    // Return fileInput (base64 string or original URL) as direct fallback
-    return fileInput;
+    // Return empty string if Cloudinary fails so caller can execute disk fallback
+    return '';
   }
 }

@@ -107,7 +107,7 @@ export class BlogsService {
       return uploadedUrl;
     }
 
-    // Fallback to local disk if Cloudinary environment variables are not set
+    // Fallback to local disk if Cloudinary environment variables are not set or fail
     try {
       const match = imageInput.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
       if (!match) return defaultUrl;
@@ -116,13 +116,26 @@ export class BlogsService {
       const buffer = Buffer.from(match[2], 'base64');
       const fileName = `cover-${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
 
-      const uploadDir = path.join(process.cwd(), '..', 'public', 'uploads', 'blogs');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
+      const possibleDirs = [
+        '/var/www/elcheeno.com/public/uploads/blogs',
+        path.join(process.cwd(), '..', 'elchino', 'public', 'uploads', 'blogs'),
+        path.join(process.cwd(), 'public', 'uploads', 'blogs'),
+      ];
 
-      const filePath = path.join(uploadDir, fileName);
-      fs.writeFileSync(filePath, buffer);
+      for (const uploadDir of possibleDirs) {
+        try {
+          const parentDir = path.dirname(path.dirname(uploadDir));
+          if (fs.existsSync(parentDir) || uploadDir.startsWith('/var/www/elcheeno.com')) {
+            if (!fs.existsSync(uploadDir)) {
+              fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            const filePath = path.join(uploadDir, fileName);
+            fs.writeFileSync(filePath, buffer);
+          }
+        } catch (e) {
+          console.error(`Failed writing image to ${uploadDir}:`, e);
+        }
+      }
 
       return `/uploads/blogs/${fileName}`;
     } catch (error) {
