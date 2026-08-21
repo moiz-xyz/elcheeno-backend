@@ -1,14 +1,23 @@
-import { Injectable, OnModuleInit, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, OnModuleInit, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 
 @Injectable()
 export class ListingsService implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   async onModuleInit() {
     // Auto-seeding disabled to allow user to manage listings manually via UI
+  }
+
+  async uploadImageToCloudinary(imageInput: string): Promise<string> {
+    const uploadedUrl = await this.cloudinaryService.uploadImage(imageInput, 'elcheeno/listings');
+    return uploadedUrl || imageInput;
   }
 
   async findAll(query?: { category?: string; search?: string; sellerId?: string; gameTitle?: string }) {
@@ -75,6 +84,10 @@ export class ListingsService implements OnModuleInit {
   }
 
   async create(createDto: CreateListingDto, authUserId?: string) {
+    if (!createDto.imageUrl || createDto.imageUrl.trim() === '') {
+      throw new BadRequestException('Product cover photo / image is required to publish a listing.');
+    }
+
     let targetSellerId = authUserId || createDto.sellerId;
 
     if (!targetSellerId) {
@@ -105,6 +118,11 @@ export class ListingsService implements OnModuleInit {
       throw new ForbiddenException('Your seller account is currently pending identity verification. You cannot publish listings until your profile is approved by an admin.');
     }
 
+    let finalImageUrl = createDto.imageUrl;
+    if (finalImageUrl && finalImageUrl.startsWith('data:image/')) {
+      finalImageUrl = await this.uploadImageToCloudinary(finalImageUrl);
+    }
+
     return this.prisma.listing.create({
       data: {
         title: createDto.title,
@@ -114,7 +132,7 @@ export class ListingsService implements OnModuleInit {
         deliveryType: createDto.deliveryType || 'instant',
         description: createDto.description || '',
         credentials: createDto.credentials || '',
-        imageUrl: createDto.imageUrl || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop',
+        imageUrl: finalImageUrl || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop',
         sellerId: targetSellerId,
       },
       include: {

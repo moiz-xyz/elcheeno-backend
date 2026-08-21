@@ -36,6 +36,12 @@ export class ListingsController {
     return this.listingsService.findOne(id);
   }
 
+  @Post('upload')
+  async uploadImage(@Body('image') image: string) {
+    const url = await this.listingsService.uploadImageToCloudinary(image);
+    return { imageUrl: url };
+  }
+
   @Post()
   create(@Body() createListingDto: CreateListingDto) {
     return this.listingsService.create(createListingDto);
